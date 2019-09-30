@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from statistics import mode
+from PIL import Image
 
 
 def find_most_common_color(image):
@@ -12,7 +13,7 @@ def find_most_common_color(image):
 
     Parameter
     ----------
-    param : PIL.Image Object
+    image : PIL.Image Object
 
     Returns
     -------
@@ -25,8 +26,77 @@ def find_most_common_color(image):
     return mode(list_pixels)
 
 
+def find_sprites(image, background_color=None):
+    ''' Isolate each sprite, producing bounding boxes.
+
+    This function isolates each sprite, producing bounding boxes with correct
+    sizes and identifying isolated parts of a sprite as an included segment.
+
+    This function accepts an optional argument background_color (an integer if
+    the image format is grayscale, or a tuple (red, green, blue) if the image
+    format is RGB) that identifies the background color (i.e., transparent
+    color) of the image. The function ignores any pixels of the image with this
+    color.
+
+    If this argument background_color is not passed, the function determines
+    the background color of the image as follows:
+
+        - The image, such as a PNG file, has an alpha channel: the function
+        ignores all the pixels of the image which alpha component is 255;
+
+        - The image has no alpha channel: the function identifies the most
+        common color of the image as the background color (cf. our function
+        find_most_common_color).
+
+    The function returns a tuple (sprites, label_map) where:
+
+        - sprites: A collection of key-value pairs (a dictionary) where each
+        key-value pair maps the key (the label of a sprite) to its associated
+        value (a Sprite object);
+
+        - label_map: A 2D array of integers of equal dimension (width and
+        height) as the original image where the sprites are packed in. The
+        label_map array maps each pixel of the image passed to the function to
+        the label of the sprite this pixel corresponds to, or 0 if this pixel
+        doesn't belong to a sprite (e.g., background color).
+
+    Parameter
+    ----------
+    image : PIL.Image Object
+
+    background_color : optional
+        - an integer if the image format is grayscale
+        - a tuple (red, green, blue) if the image format is RGB
+
+    Returns
+    -------
+    tupple
+        (sprites, label_map)
+    '''
+    if not background_color:
+        background_color = find_most_common_color(image)
+    label_map = []
+    if image.mode == 'RGBA':
+        for y in range(image.size[1]):
+            label_map.append([])
+            for x in range(image.size[0]):
+                if image.getpixel((x, y))[3] == 255:
+                    label_map[y].append(1)
+                else:
+                    label_map[y].append(0)
+    else:
+        for y in range(image.size[1]):
+            label_map.append([])
+            for x in range(image.size[0]):
+                if image.getpixel((x, y)) == background_color:
+                    label_map[y].append(0)
+                else:
+                    label_map[y].append(1)
+    return label_map
+
+
 class Sprite():
-    def __init__(self, label=None, x1=None, y1=None,x2=None, y2=None):
+    def __init__(self, label=None, x1=None, y1=None, x2=None, y2=None):
         """Constructor"""
 
         def check_value(*list_values):
@@ -66,25 +136,17 @@ class Sprite():
     def width(self):
         """return image's width"""
         return (self.__x2 - self.__x1 + 1)
-    
+
     @property
     def height(self):
         """return image's height"""
         return (self.__y2 - self.__y1 + 1)
 
-    # @property
-    # def duration(self):
-    #     """return value of self.__duration"""
-    #     return self.__duration
-    #
-    # @property
-    # def episode_id(self):
-    #     """return value of self.__episode_id"""
-    #     return self.__episode_id
-    #
-    # @staticmethod
-    # def __parse_episode_id(url):
-    #     """Find episode identifier.
-    #
-    #     """
-    #     return url[(url.find("images/") + 7):(len(url) - 4)]
+
+if __name__ == '__main__':
+    image = Image.open('metal_slug_single_sprite_large.png')
+    print(find_most_common_color(image))
+    print(*find_sprites(image), sep='\n')
+    image = Image.open('optimized_sprite_sheet.png')
+    print(find_most_common_color(image))
+    print(*find_sprites(image), sep='\n')
