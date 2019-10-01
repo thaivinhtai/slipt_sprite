@@ -73,25 +73,70 @@ def find_sprites(image, background_color=None):
     tupple
         (sprites, label_map)
     '''
+
+    def get_label_map(image, index1=1, index2=0, slice1=3, slice2=4,
+                      background_color=(0, 0, 0, 255)):
+        '''Get label_map.
+
+        Parameter
+        ----------
+        image : PIL.Image Object
+        index1 : int
+            value be added to label_map, 1 is foreground, 0 is backgroup
+                - image.mode == RGBA, index1 = 1
+                - otherwise, index1 = 0
+        index2 : int
+            value be added to label_map, 1 is foreground, 0 is backgroup
+                - image.mode == RGBA, index2 = 0
+                - otherwise, index2 = 1
+        slice1 : int
+            -   slice1 = 3 if image.mode == RGBA
+            -   otherwise, slice1 = 0
+        slice2 : int
+            -   slice1 = 4 if image.mode == RGBA
+            -   otherwise, slice2 = None
+        background_color : tupple
+            Background color
+
+        Returns
+        -------
+        list
+            label_map
+        '''
+        label_map = []
+        for y in range(image.size[1]):
+            label_map.append([])
+            for x in range(image.size[0]):
+                if image.getpixel((x, y))[slice1:slice2] ==\
+                    background_color[slice1:slice2]:
+                    label_map[y].append(index1)
+                else:
+                    label_map[y].append(index2)
+        return label_map
+
     if not background_color:
         background_color = find_most_common_color(image)
     label_map = []
     if image.mode == 'RGBA':
-        for y in range(image.size[1]):
-            label_map.append([])
-            for x in range(image.size[0]):
-                if image.getpixel((x, y))[3] == 255:
-                    label_map[y].append(1)
-                else:
-                    label_map[y].append(0)
+        label_map = get_label_map(image)
+        # for y in range(image.size[1]):
+        #     label_map.append([])
+        #     for x in range(image.size[0]):
+        #         if image.getpixel((x, y))[3] == 255:
+        #             label_map[y].append(1)
+        #         else:
+        #             label_map[y].append(0)
     else:
-        for y in range(image.size[1]):
-            label_map.append([])
-            for x in range(image.size[0]):
-                if image.getpixel((x, y)) == background_color:
-                    label_map[y].append(0)
-                else:
-                    label_map[y].append(1)
+        label_map = get_label_map(image, index1=0, index2=1,
+                                  slice1=0, slice2=None,
+                                  background_color=background_color)
+        # for y in range(image.size[1]):
+        #     label_map.append([])
+        #     for x in range(image.size[0]):
+        #         if image.getpixel((x, y)) == background_color:
+        #             label_map[y].append(0)
+        #         else:
+        #             label_map[y].append(1)
     return label_map
 
 
