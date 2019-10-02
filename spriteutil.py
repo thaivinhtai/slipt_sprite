@@ -3,7 +3,21 @@ from statistics import mode
 from PIL import Image
 
 
-def __check_neighborhood(label_map, current_coordinates, current_label):
+def __process_data_from_check_neighbor(label_map, x, y,
+                                       check_dict, label, existed_labels,
+                                       check, list_labeled, assigned_label):
+    if check and label_map[x][y] == -1:
+        label_map[x][y] = assigned_label
+        check_dict[assigned_label] += list_labeled
+    elif label_map[x][y] == -1:
+        label_map[x][y] = label
+        label += 1
+        check_dict[label] = []
+        existed_labels.append(label)
+    return label_map, check_dict, label, existed_labels
+
+
+def __check_neighborhood(label_map, current_coordinates, existed_labels):
     '''Look around a pixel's neighbor.
 
     This function browses all pixels that surrounding the input pixel.
@@ -16,15 +30,33 @@ def __check_neighborhood(label_map, current_coordinates, current_label):
         A two dimensions array that marks wich pixel is foreground or not.
     current_coordinates : tupple
         The coordinates of the base pixel.
-    current_label : int
+    existed_labels : list
         A number that marks the current blod.
 
     Returns
     -------
     bool
-        - true if the inputed pixel is near
+        - true if the inputed pixel is near the valid labeled pixel
+    list
+        - list valid label near inputed pixel
+    int
+        - the label assigns to inputed pixel
     '''
-    pass
+    x = current_coordinates[0]
+    y = current_coordinates[1]
+    list_labeled = []
+    directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1)]
+    for direction in directions:
+        x_neighbor = x + direction[0]
+        y_neighbor = y + direction[1]
+        try:
+            if label_map[x_neighbor][y_neighbor] in existed_labels:
+                list_labeled.append(label_map[x_neighbor][y_neighbor])
+        except IndexError:
+            pass
+    if list_labeled:
+        return True, list_labeled, list_labeled[0]
+    return False, None, None
 
 
 def find_most_common_color(image):
@@ -148,6 +180,40 @@ def find_sprites(image, background_color=None):
                                   slice1=0, slice2=None,
                                   background_color=background_color)
 
+    label = 1
+    dict_related_label = {1: []}
+    existed_labels = [label]
+    for x in range(len(label_map)):
+        for y in range(len(label_map[0])):
+            label_map, dict_related_label, label, existed_labels =\
+                __process_data_from_check_neighbor\
+                    (label_map, x, y, dict_related_label,
+                     label, existed_labels,
+                     *__check_neighborhood(label_map, (x, y), existed_labels))
+    for key, value in dict_related_label.items():
+        dict_related_label[key] = set(value)
+
+    print(dict_related_label)
+    for key in existed_labels:
+        stop_flag = 0
+        while True:
+            try:
+                key_to_be_del = set(dict_related_label[key])
+                if key_to_be_del == stop_flag:
+                    False
+                for element in key_to_be_del:
+                    [dict_related_label[key].add(value)
+                     for value in dict_related_label[element]]
+                for element in key_to_be_del:
+                    if element != key:
+                        del dict_related_label[element]
+                stop_flag = set(key_to_be_del)
+            except KeyError:
+                pass
+    print(dict_related_label)
+
+
+
 
     return label_map
 
@@ -201,12 +267,6 @@ class Sprite():
 
 
 if __name__ == '__main__':
-    image = Image.open('metal_slug_single_sprite_large.png')
-    print(find_most_common_color(image))
-    print(*find_sprites(image), sep='\n')
-    image = Image.open('optimized_sprite_sheet.png')
-    print(find_most_common_color(image))
-    print(*find_sprites(image), sep='\n')
     image = Image.open('metal_slug_sprite_large.png')
     print(find_most_common_color(image))
     print(*find_sprites(image), sep='\n')
