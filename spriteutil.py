@@ -74,7 +74,7 @@ def find_sprites(image, background_color=None):
         (sprites, label_map)
     '''
 
-    def get_label_map(image, index1=1, index2=0, slice1=3, slice2=4,
+    def get_label_map(image, index1=-1, index2=0, slice1=3, slice2=4,
                       background_color=(0, 0, 0, 255)):
         '''Get label_map.
 
@@ -83,12 +83,12 @@ def find_sprites(image, background_color=None):
         image : PIL.Image Object
         index1 : int
             value be added to label_map, 1 is foreground, 0 is backgroup
-                - image.mode == RGBA, index1 = 1
+                - image.mode == RGBA, index1 = -1
                 - otherwise, index1 = 0
         index2 : int
             value be added to label_map, 1 is foreground, 0 is backgroup
                 - image.mode == RGBA, index2 = 0
-                - otherwise, index2 = 1
+                - otherwise, index2 = -1
         slice1 : int
             -   slice1 = 3 if image.mode == RGBA
             -   otherwise, slice1 = 0
@@ -119,24 +119,10 @@ def find_sprites(image, background_color=None):
     label_map = []
     if image.mode == 'RGBA':
         label_map = get_label_map(image)
-        # for y in range(image.size[1]):
-        #     label_map.append([])
-        #     for x in range(image.size[0]):
-        #         if image.getpixel((x, y))[3] == 255:
-        #             label_map[y].append(1)
-        #         else:
-        #             label_map[y].append(0)
     else:
-        label_map = get_label_map(image, index1=0, index2=1,
+        label_map = get_label_map(image, index1=0, index2=-1,
                                   slice1=0, slice2=None,
                                   background_color=background_color)
-        # for y in range(image.size[1]):
-        #     label_map.append([])
-        #     for x in range(image.size[0]):
-        #         if image.getpixel((x, y)) == background_color:
-        #             label_map[y].append(0)
-        #         else:
-        #             label_map[y].append(1)
     return label_map
 
 
@@ -193,5 +179,8 @@ if __name__ == '__main__':
     print(find_most_common_color(image))
     print(*find_sprites(image), sep='\n')
     image = Image.open('optimized_sprite_sheet.png')
+    print(find_most_common_color(image))
+    print(*find_sprites(image), sep='\n')
+    image = Image.open('metal_slug_sprite_large.png')
     print(find_most_common_color(image))
     print(*find_sprites(image), sep='\n')
