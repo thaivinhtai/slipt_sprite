@@ -1,6 +1,68 @@
 # -*- coding: utf-8 -*-
 from statistics import mode
 from PIL import Image
+import time
+
+
+def __assign_completed_label_to_sprites(label_map, key, value):
+    for x in range(len(label_map)):
+        for y in range(len(label_map[0])):
+            if label_map[x][y] in value:
+                label_map[x][y] = key
+    return label_map
+
+
+def __classify_label(label_map, dict_related_label, label, existed_labels):
+    for x in range(len(label_map)):
+        for y in range(len(label_map[0])):
+            label_map, dict_related_label, label, existed_labels =\
+                __process_data_from_check_neighbor\
+                (label_map, x, y, dict_related_label, label, existed_labels,
+                 *__check_neighborhood(label_map, (x, y), existed_labels))
+    for key, value in dict_related_label.items():
+        dict_related_label[key] = set(value)
+    return dict_related_label, label, existed_labels
+
+
+def __get_label_map(image, index1=-1, index2=0, slice1=3, slice2=4,
+                    background_color=(0, 0, 0, 255)):
+    '''Get label_map.
+
+    Parameter
+    ----------
+    image : PIL.Image Object
+    index1 : int
+        value be added to label_map, 1 is foreground, 0 is backgroup
+            - image.mode == RGBA, index1 = -1
+            - otherwise, index1 = 0
+    index2 : int
+        value be added to label_map, 1 is foreground, 0 is backgroup
+            - image.mode == RGBA, index2 = 0
+            - otherwise, index2 = -1
+    slice1 : int
+        -   slice1 = 3 if image.mode == RGBA
+        -   otherwise, slice1 = 0
+    slice2 : int
+        -   slice1 = 4 if image.mode == RGBA
+        -   otherwise, slice2 = None
+    background_color : tupple
+        Background color
+
+    Returns
+    -------
+    list
+        label_map
+    '''
+    label_map = []
+    for y in range(image.size[1]):
+        label_map.append([])
+        for x in range(image.size[0]):
+            if image.getpixel((x, y))[slice1:slice2] ==\
+                    background_color[slice1:slice2]:
+                label_map[y].append(index1)
+            else:
+                label_map[y].append(index2)
+    return label_map
 
 
 def __process_data_from_check_neighbor(label_map, x, y,
@@ -15,6 +77,26 @@ def __process_data_from_check_neighbor(label_map, x, y,
         check_dict[label] = []
         existed_labels.append(label)
     return label_map, check_dict, label, existed_labels
+
+
+def __clean_dict_related_label(key, dict_related_label):
+    if key not in dict_related_label.keys():
+        return dict_related_label
+    previous_lenght = 0
+    while True:
+        key_to_be_del = set(dict_related_label[key])
+        print(dict_related_label)
+        if len(dict_related_label) == previous_lenght:
+            break
+        for element in key_to_be_del:
+            if element in dict_related_label.keys():
+                [dict_related_label[key].add(value)
+                 for value in dict_related_label[element]]
+        previous_lenght = len(dict_related_label)
+        for element in key_to_be_del:
+            if element != key and element in dict_related_label.keys():
+                del dict_related_label[element]
+    return dict_related_label
 
 
 def __check_neighborhood(label_map, current_coordinates, existed_labels):
@@ -129,92 +211,32 @@ def find_sprites(image, background_color=None):
     tupple
         (sprites, label_map)
     '''
-
-    def get_label_map(image, index1=-1, index2=0, slice1=3, slice2=4,
-                      background_color=(0, 0, 0, 255)):
-        '''Get label_map.
-
-        Parameter
-        ----------
-        image : PIL.Image Object
-        index1 : int
-            value be added to label_map, 1 is foreground, 0 is backgroup
-                - image.mode == RGBA, index1 = -1
-                - otherwise, index1 = 0
-        index2 : int
-            value be added to label_map, 1 is foreground, 0 is backgroup
-                - image.mode == RGBA, index2 = 0
-                - otherwise, index2 = -1
-        slice1 : int
-            -   slice1 = 3 if image.mode == RGBA
-            -   otherwise, slice1 = 0
-        slice2 : int
-            -   slice1 = 4 if image.mode == RGBA
-            -   otherwise, slice2 = None
-        background_color : tupple
-            Background color
-
-        Returns
-        -------
-        list
-            label_map
-        '''
-        label_map = []
-        for y in range(image.size[1]):
-            label_map.append([])
-            for x in range(image.size[0]):
-                if image.getpixel((x, y))[slice1:slice2] ==\
-                    background_color[slice1:slice2]:
-                    label_map[y].append(index1)
-                else:
-                    label_map[y].append(index2)
-        return label_map
-
     if not background_color:
         background_color = find_most_common_color(image)
     label_map = []
     if image.mode == 'RGBA':
-        label_map = get_label_map(image)
+        label_map = __get_label_map(image)
     else:
-        label_map = get_label_map(image, index1=0, index2=-1,
-                                  slice1=0, slice2=None,
-                                  background_color=background_color)
-
+        label_map = __get_label_map(image, index1=0, index2=-1,
+                                    slice1=0, slice2=None,
+                                    background_color=background_color)
     label = 1
     dict_related_label = {1: []}
     existed_labels = [label]
-    for x in range(len(label_map)):
-        for y in range(len(label_map[0])):
-            label_map, dict_related_label, label, existed_labels =\
-                __process_data_from_check_neighbor\
-                    (label_map, x, y, dict_related_label,
-                     label, existed_labels,
-                     *__check_neighborhood(label_map, (x, y), existed_labels))
-    for key, value in dict_related_label.items():
-        dict_related_label[key] = set(value)
-
+    dict_related_label, label, existed_labels =\
+        __classify_label(label_map, dict_related_label, label, existed_labels)
+    del dict_related_label[label]
     print(dict_related_label)
     for key in existed_labels:
-        stop_flag = 0
-        while True:
-            try:
-                key_to_be_del = set(dict_related_label[key])
-                if key_to_be_del == stop_flag:
-                    False
-                for element in key_to_be_del:
-                    [dict_related_label[key].add(value)
-                     for value in dict_related_label[element]]
-                for element in key_to_be_del:
-                    if element != key:
-                        del dict_related_label[element]
-                stop_flag = set(key_to_be_del)
-            except KeyError:
-                pass
+        dict_related_label =\
+            __clean_dict_related_label(key, dict_related_label)
+    existed_labels = []
+    for key, value in dict_related_label.items():
+        label_map = __assign_completed_label_to_sprites(label_map, key, value)
+        existed_labels.append(key)
+
     print(dict_related_label)
-
-
-
-
+    print(existed_labels)
     return label_map
 
 
@@ -267,6 +289,11 @@ class Sprite():
 
 
 if __name__ == '__main__':
+    image = Image.open('optimized_sprite_sheet.png')
+    print(find_most_common_color(image))
+    find_sprites(image)
+    # print(*find_sprites(image), sep='\n')
     image = Image.open('metal_slug_sprite_large.png')
     print(find_most_common_color(image))
-    print(*find_sprites(image), sep='\n')
+    find_sprites(image)
+    # print(*find_sprites(image), sep='\n')
