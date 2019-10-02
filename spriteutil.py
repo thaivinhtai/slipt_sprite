@@ -3,6 +3,30 @@ from statistics import mode
 from PIL import Image
 
 
+def __check_neighborhood(label_map, current_coordinates, current_label):
+    '''Look around a pixel's neighbor.
+
+    This function browses all pixels that surrounding the input pixel.
+    The process will go through from the upper-left pixel and check if the
+    inputed pixel is near the valid labeled pixel or not.
+
+    Parameter
+    ----------
+    label_map : nested list
+        A two dimensions array that marks wich pixel is foreground or not.
+    current_coordinates : tupple
+        The coordinates of the base pixel.
+    current_label : int
+        A number that marks the current blod.
+
+    Returns
+    -------
+    bool
+        - true if the inputed pixel is near
+    '''
+    pass
+
+
 def find_most_common_color(image):
     '''Get pixel that is the most used in image.
 
@@ -123,6 +147,8 @@ def find_sprites(image, background_color=None):
         label_map = get_label_map(image, index1=0, index2=-1,
                                   slice1=0, slice2=None,
                                   background_color=background_color)
+
+
     return label_map
 
 
