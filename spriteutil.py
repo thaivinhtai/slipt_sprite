@@ -346,15 +346,6 @@ class Sprite():
 
 
 if __name__ == '__main__':
-    # image = Image.open('optimized_sprite_sheet.png')
-    # print(find_most_common_color(image))
-    # find_sprites(image)
-    # print(*find_sprites(image), sep='\n')
-    # image = Image.open('metal_slug_sprite_large.png')
-    # print(find_most_common_color(image))
-    # find_sprites(image)
-    # print(*find_sprites(image), sep='\n')
-
     image = Image.open('metal_slug_single_sprite.png')
     sprites, label_map = find_sprites(image, background_color=(255, 255, 255))
     print(len(sprites))
@@ -364,7 +355,14 @@ if __name__ == '__main__':
     pprint.pprint(label_map, width=120)
 
     image = Image.open('optimized_sprite_sheet.png')
-    sprites, label_map = find_sprites(image, background_color=(255, 255, 255))
+    sprites, label_map = find_sprites(image, background_color=(255, 255, 255, 255))
     print(len(sprites))
     for label, sprite in sprites.items():
         print(f"Sprite ({label}): [{sprite.top_left}, {sprite.bottom_right}] {sprite.width}x{sprite.height}")
+
+    image = Image.open('test.png')
+    sprites, label_map = find_sprites(image, background_color=(255, 255, 255, 255))
+    print(len(sprites))
+    for label, sprite in sprites.items():
+        print(f"Sprite ({label}): [{sprite.top_left}, {sprite.bottom_right}] {sprite.width}x{sprite.height}")
+    print(*label_map, sep='\n')
