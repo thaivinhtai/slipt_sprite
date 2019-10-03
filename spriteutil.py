@@ -2,6 +2,35 @@
 from statistics import mode
 from PIL import Image
 import time
+import pprint
+
+
+def __find_top(label_map, element):
+    for x in range(len(label_map)):
+        for y in range(len(label_map[0])):
+            if label_map[x][y] == element:
+                return (x, y)
+
+
+def __find_left(label_map, element):
+    for y in range(len(label_map[0])):
+        for x in range(len(label_map)):
+            if label_map[x][y] == element:
+                return (x, y)
+
+
+def __find_bottom(label_map, element):
+    for x in range(len(label_map) - 1, -1, -1):
+        for y in range(len(label_map[0])):
+            if label_map[x][y] == element:
+                return (x, y)
+
+
+def __find_right(label_map, element):
+    for y in range(len(label_map[0]) - 1, -1, -1):
+        for x in range(len(label_map)):
+            if label_map[x][y] == element:
+                return (x, y)
 
 
 def __assign_completed_label_to_sprites(label_map, key, value):
@@ -85,7 +114,6 @@ def __clean_dict_related_label(key, dict_related_label):
     previous_lenght = 0
     while True:
         key_to_be_del = set(dict_related_label[key])
-        print(dict_related_label)
         if len(dict_related_label) == previous_lenght:
             break
         for element in key_to_be_del:
@@ -220,24 +248,43 @@ def find_sprites(image, background_color=None):
         label_map = __get_label_map(image, index1=0, index2=-1,
                                     slice1=0, slice2=None,
                                     background_color=background_color)
+    # A flag represent for new label that will be assign to pixels
     label = 1
+    # A dictionary that represent a graph of connected labels
     dict_related_label = {1: []}
+    # A list stores all assigned labels
     existed_labels = [label]
+    # Assign all labels to labels map
     dict_related_label, label, existed_labels =\
         __classify_label(label_map, dict_related_label, label, existed_labels)
+    # The last element always contains empty set, we dont need it
     del dict_related_label[label]
-    print(dict_related_label)
+    # Compress the dictionary of labels
     for key in existed_labels:
         dict_related_label =\
             __clean_dict_related_label(key, dict_related_label)
+    # free the existed labels
     existed_labels = []
+    # get new list valid labels
     for key, value in dict_related_label.items():
         label_map = __assign_completed_label_to_sprites(label_map, key, value)
         existed_labels.append(key)
 
-    print(dict_related_label)
-    print(existed_labels)
-    return label_map
+    dict_coordinate = dict()
+    for element in existed_labels:
+        top = __find_top(label_map, element)
+        left = __find_left(label_map, element)
+        bottom = __find_bottom(label_map, element)
+        right = __find_right(label_map, element)
+
+        dict_coordinate[element] = Sprite(label=element, x1=left[1], y1=top[0],
+                                          x2=right[1], y2=bottom[0])
+
+
+    # print(dict_coordinate)
+    # print(dict_related_label)
+    # print(existed_labels)
+    return dict_coordinate, label_map
 
 
 class Sprite():
@@ -287,13 +334,37 @@ class Sprite():
         """return image's height"""
         return (self.__y2 - self.__y1 + 1)
 
+    @property
+    def top_left(self):
+        """return image's top left pixel's coordinate"""
+        return self.__top_left
+
+    @property
+    def bottom_right(self):
+        """return image's bottom right pixel's coordinate"""
+        return self.__bottom_right
+
 
 if __name__ == '__main__':
+    # image = Image.open('optimized_sprite_sheet.png')
+    # print(find_most_common_color(image))
+    # find_sprites(image)
+    # print(*find_sprites(image), sep='\n')
+    # image = Image.open('metal_slug_sprite_large.png')
+    # print(find_most_common_color(image))
+    # find_sprites(image)
+    # print(*find_sprites(image), sep='\n')
+
+    image = Image.open('metal_slug_single_sprite.png')
+    sprites, label_map = find_sprites(image, background_color=(255, 255, 255))
+    print(len(sprites))
+    for label, sprite in sprites.items():
+        print(f"Sprite ({label}): [{sprite.top_left}, {sprite.bottom_right}] {sprite.width}x{sprite.height}")
+
+    pprint.pprint(label_map, width=120)
+
     image = Image.open('optimized_sprite_sheet.png')
-    print(find_most_common_color(image))
-    find_sprites(image)
-    # print(*find_sprites(image), sep='\n')
-    image = Image.open('metal_slug_sprite_large.png')
-    print(find_most_common_color(image))
-    find_sprites(image)
-    # print(*find_sprites(image), sep='\n')
+    sprites, label_map = find_sprites(image, background_color=(255, 255, 255))
+    print(len(sprites))
+    for label, sprite in sprites.items():
+        print(f"Sprite ({label}): [{sprite.top_left}, {sprite.bottom_right}] {sprite.width}x{sprite.height}")
